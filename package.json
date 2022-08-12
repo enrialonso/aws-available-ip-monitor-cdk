@@ -1,10 +1,10 @@
 {
-  "name": "vpc-ip-monitor",
+  "name": "subnet-ip-monitor",
   "version": "1.0.0",
   "description": "",
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "aws-cdk-lib": "2.31.1"
+    "aws-cdk-lib": "2.37.1"
   }
 }

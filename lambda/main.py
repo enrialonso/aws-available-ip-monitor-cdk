@@ -12,7 +12,8 @@ ec2_resources = boto3.resource("ec2")
 cloudwatch = boto3.client("cloudwatch")
 
 
-def get_vpc_ids() -> List[Dict]:
+def get_subnets() -> list:
+    subnets = []
     if SELECTED_VPC == "all":
         vpc_raw = ec2.describe_vpcs(
             Filters=[
@@ -24,17 +25,24 @@ def get_vpc_ids() -> List[Dict]:
                 },
             ]
         )
-        return [{"id": item["VpcId"]} for item in vpc_raw["Vpcs"]]
+        vpc_ids = [{"id": item["VpcId"]} for item in vpc_raw["Vpcs"]]
     else:
-        return [{"id": item} for item in SELECTED_VPC.split(",")]
+        vpc_ids = [{"id": item} for item in SELECTED_VPC.split(",")]
+
+    for vpc in vpc_ids:
+        print(f"VPC ID >> {vpc['id']}")
+        vpc = ec2_resources.Vpc(vpc["id"])
+        subnets += vpc.subnets.all()
+
+    return subnets
 
 
 def send_cloudwatch_metrics(subnet_id: str, used_ips_percentage: float) -> None:
     cloudwatch.put_metric_data(
-        Namespace="IP Subnet Monitor",
+        Namespace=os.getenv("ALARM_NAMESPACE"),
         MetricData=[
             {
-                "MetricName": f"Used IP's - {subnet_id}",
+                "MetricName": f"{os.getenv('PREFIX_METRIC_NAME')} - {subnet_id}",
                 "Dimensions": [
                     {"Name": "Subnets", "Value": subnet_id},
                 ],
@@ -47,14 +55,13 @@ def send_cloudwatch_metrics(subnet_id: str, used_ips_percentage: float) -> None:
 
 
 def handler(event, context):
-    for vpc in get_vpc_ids():
-        print(f"VPC ID >> {vpc['id']}")
-        vpc_info = ec2_resources.Vpc(vpc["id"])
-        for subnet in vpc_info.subnets.all():
-            total_ips_cidr = ipaddress.ip_network(subnet.cidr_block).num_addresses
-            total_ips_available_subnet = subnet.available_ip_address_count
-            used_ips = total_ips_cidr - total_ips_available_subnet
-            used_ips_percentage = 100 - ((total_ips_available_subnet * 100) / total_ips_cidr)
-            msg = f"\tSubnet id: {subnet.id} Total Ips Subnet: {total_ips_cidr}, Available: {total_ips_available_subnet}, IP Used: {used_ips} - {used_ips_percentage:.1f} %"
-            print(msg)
-            send_cloudwatch_metrics(subnet.id, used_ips_percentage)
+    subnets = get_subnets()
+
+    for subnet in subnets:
+        total_ips_cidr = ipaddress.ip_network(subnet.cidr_block).num_addresses
+        total_ips_available_subnet = subnet.available_ip_address_count
+        used_ips = total_ips_cidr - total_ips_available_subnet
+        used_ips_percentage = 100 - ((total_ips_available_subnet * 100) / total_ips_cidr)
+        msg = f"\tSubnet id: {subnet.id} Total Ips Subnet: {total_ips_cidr}, Available: {total_ips_available_subnet}, IP Used: {used_ips} - {used_ips_percentage:.1f} %"
+        print(msg)
+        send_cloudwatch_metrics(subnet.id, used_ips_percentage)

@@ -55,7 +55,7 @@ class SubnetIpsMonitor(Stack):
             )
         )
 
-        # VPC
+        # Function
         self.lambda_monitor = lambda_.Function(
             self,
             "LambdaVPCIpMonitor",
@@ -71,7 +71,7 @@ class SubnetIpsMonitor(Stack):
                 "REGION": self.region,
                 "SELECTED_VPC": self.vpcs,
                 "ALARM_NAMESPACE": self.alarm_namespace,
-                "PREFIX_METRIC_NAME": self.prefix_metric_name
+                "PREFIX_METRIC_NAME": self.prefix_metric_name,
             },
         )
 
@@ -98,19 +98,19 @@ class SubnetIpsMonitor(Stack):
             )
 
         # Build all alarms for selected subnets of vpc
-        for subnet_id in self.get_subnet_ids():
+        for subnet in self.get_subnet_ids():
             metric = cloudwatch.Metric(
                 namespace=self.alarm_namespace,
-                metric_name=f"{self.prefix_metric_name} - {subnet_id}",
-                label=f"{self.prefix_metric_name} - {subnet_id}",
-                dimensions_map={"Subnets": subnet_id},
+                metric_name=f"{self.prefix_metric_name} - {subnet['subnet']}",
+                label=f"{self.prefix_metric_name} - {subnet['subnet']}",
+                dimensions_map={"Subnets": subnet['subnet']},
                 period=aws_cdk.Duration.minutes(1),
                 unit=cloudwatch.Unit.PERCENT,
             )
             alarm = cloudwatch.Alarm(
                 self,
-                f"VpcSubnetMonitorAvailableIps-{subnet_id}",
-                alarm_name=f"Alarm Subnet: {subnet_id}",
+                f"VpcSubnetMonitorAvailableIps-{subnet['subnet']}",
+                alarm_name=f"Alarm Vpc: {subnet['vpc']} Subnet: {subnet['subnet']}",
                 metric=metric,
                 comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
                 threshold=self.alarm_threshold,
@@ -140,6 +140,6 @@ class SubnetIpsMonitor(Stack):
         for vpc_id in vpc_ids:
             vpc_info = ec2_resources.Vpc(vpc_id)
             for subnet in vpc_info.subnets.all():
-                subnet_ids.append(subnet.id)
+                subnet_ids.append({"vpc": vpc_id, "subnet": subnet.id})
 
         return subnet_ids

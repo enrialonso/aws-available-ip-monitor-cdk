@@ -15,8 +15,8 @@
     ]
   },
   "context": {
-    "vpcs": "vpc-01e52581bab413b49",
-    "emailSubscription": "enrialonso@gmail.com",
+    "vpcs": "all",
+    "emailSubscription": "email@email.com",
     "alarmThreshold": 50
   }
 }
