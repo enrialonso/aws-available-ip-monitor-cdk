@@ -1,0 +1,6 @@
+aws-cdk-lib==2.19.0
+constructs>=10.0.0,<11.0.0
+loguru==0.6.0
+
+playwright==1.23.1
+boto3==1.24.32
