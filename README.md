@@ -47,6 +47,9 @@ On the `context` in the `cdk.json` can you set this options
 ...
 ```
 
-#### Deploy `cdk deploy`
+**Deploy** `cdk deploy`
 
-#### Destroy `cdk destroy`
+**Destroy** `cdk destroy`
+
+<sub>AWS have a service for monitor every ip on your subnet, [IPAM](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) 
+but is not free and have a lot of features for this or more.</sub>
